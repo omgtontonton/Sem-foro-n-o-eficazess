@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Semáforo inteligente</title>
+    <style>
+        body{background:#1a2f3f;display:flex;justify-content:center;font-family:sans-serif;margin:16px}
+        .card{max-width:750px;background:#dde3e9;border-radius:40px;padding:20px;box-shadow:0 20px 30px #00000080}
+        canvas{width:100%;height:auto;background:#d9e2e9;border-radius:24px;cursor:pointer;box-shadow:0 8px 0 #6f7e89}
+        .botoes{display:flex;gap:8px;margin:15px 0;flex-wrap:wrap}
+        button{background:#edf4fa;border:none;border-radius:40px;padding:8px 16px;font-weight:700;box-shadow:0 4px 0 #a2b3c0;cursor:pointer}
+        button.ativo{background:#fedb9f;transform:translateY(3px);box-shadow:0 2px 0 #a2b3c0}
+        .info{background:#2b4553;color:#fff;padding:8px 20px;border-radius:60px;display:flex;gap:20px}
+        .ponto{width:18px;height:18px;border-radius:20px;background:#f4c542;display:inline-block;margin-right:5px}
+        .rodape{text-align:center;margin-top:15px;color:#284956;background:#ccdce8;padding:8px;border-radius:60px}
+    </style>
+</head>
+<body>
+<div class="card">
+    <canvas id="c" width="750" height="400"></canvas>
+    <div class="botoes">
+        <button class="ativo" data-cena="0">1️⃣ ver</button>
+        <button data-cena="1">2️⃣ demora</button>
+        <button data-cena="2">3️⃣ ideia</button>
+        <button data-cena="3">4️⃣ adaptativo</button>
+    </div>
+    <div class="info">
+        <span><span class="ponto"></span> pessoa</span>
+        <span><span class="ponto" style="background:#2b95d6"></span> ped verm</span>
+        <span><span class="ponto" style="background:#d94949"></span> carro verm</span>
+    </div>
+    <div class="rodape">⏱️ 1min após detectar → fecha p/ carros • clique p/ avançar</div>
+</div>
+<script>
+(function(){
+    let c=document.getElementById('c'), x=c.getContext('2d');
+    let cena=0, timer=0, ultimoTempo=null, ped=true, luzCarro='green', luzPed='red';
+    const ESPERA=8; // 8s = 1min simbólico
+    let botoes=document.querySelectorAll('button');
+
+    function ativarBotao(i){
+        botoes.forEach((b,idx)=>b.classList.toggle('ativo',idx===i));
+    }
+
+    function mudarCena(n){
+        if(n<0||n>3)return;
+        cena=n; timer=0; ultimoTempo=null; ativarBotao(n);
+        if(cena===0||cena===1||cena===2){luzCarro='green'; luzPed='red'; ped=true;}
+        if(cena===3){luzCarro='green'; luzPed='red'; ped=true;}
+        desenhar();
+    }
+
+    function desenhar(){
+        x.clearRect(0,0,750,400);
+        // céu e rua
+        x.fillStyle='#c0daf0'; x.fillRect(0,0,750,200);
+        x.fillStyle='#4a5c66'; x.fillRect(0,200,750,180);
+        // faixa
+        x.fillStyle='#f8f9fa'; for(let i=0;i<7;i++) x.fillRect(320+i*18,240,8,50);
+        // calçada
+        x.fillStyle='#7e6b5c'; x.fillRect(220,260,140,18);
+        x.fillStyle='#a78e7a'; x.fillRect(220,260,140,8);
+        // pessoa
+        x.fillStyle='#f2dbb7'; x.beginPath(); x.arc(290,250,16,0,2*Math.PI); x.fill();
+        x.fillStyle='#32281c'; x.beginPath(); x.arc(285,246,3,0,2*Math.PI); x.arc(295,246,3,0,2*Math.PI); x.fill();
+        x.fillStyle='#3f638b'; x.fillRect(280,265,22,35);
+        x.fillStyle='#2b4a6b'; x.fillRect(280,298,8,18); x.fillRect(294,298,8,18);
+        x.beginPath(); x.strokeStyle='#2b4a6b'; x.lineWidth=6; x.moveTo(290,275); x.lineTo(310,260); x.stroke();
+        if(cena===2){x.fillStyle='#fff9e6'; x.beginPath(); x.arc(340,190,32,0,2*Math.PI); x.fill(); x.strokeStyle='#c0a86a'; x.stroke(); x.font='28px sans-serif'; x.fillStyle='#daa520'; x.fillText('💡',323,205);}
+        // semáforo
+        x.fillStyle='#5c503e'; x.fillRect(540,120,32,190);
+        x.fillStyle='#403a2b'; x.fillRect(535,110,42,18);
+        x.fillStyle='#2e2b23'; x.fillRect(530,140,52,130);
+        // luzes carro
+        x.beginPath(); x.arc(556,175,16,0,2*Math.PI); x.fillStyle=luzCarro==='red'?'#f33':'#550000'; x.fill(); x.stroke();
+        x.beginPath(); x.arc(556,215,16,0,2*Math.PI); x.fillStyle='#987000'; x.fill(); x.stroke();
+        x.beginPath(); x.arc(556,255,16,0,2*Math.PI); x.fillStyle=luzCarro==='green'?'#2bff2b':'#004400'; x.fill(); x.stroke();
+        // luz pedestre
+        x.fillStyle='#4d3f2b'; x.fillRect(590,160,22,70);
+        x.fillStyle='#242018'; x.fillRect(590,160,22,70);
+        x.beginPath(); x.arc(601,185,11,0,2*Math.PI); x.fillStyle=luzPed==='red'?'#f33':'#2f0000'; x.fill(); x.stroke();
+        x.beginPath(); x.arc(601,215,11,0,2*Math.PI); x.fillStyle=luzPed==='green'?'#2ef02e':'#004400'; x.fill(); x.stroke();
+        x.font='bold 15px monospace'; x.fillStyle='#fff'; x.fillText(luzPed==='red'?'🧑⛔':'🧑✅',570,240);
+        // textos
+        x.font='bold 14px sans-serif';
+        if(cena===3){
+            let restante=Math.max(0,ESPERA-timer);
+            if(luzCarro==='red') x.fillStyle='#1f4d2d'; else x.fillStyle='#aa3a3a';
+            x.fillText(luzCarro==='red'?'✅ pedestre atravessa':`⏳ espera... ${Math.ceil(restante)}s`,380,90);
+        }else if(cena===0||cena===1) x.fillStyle='#9e4a1b', x.fillText('⏱️ semáforo demora...',400,90);
+        else if(cena===2) x.fillStyle='#a17842', x.fillText('💭 1 min após pessoa...',380,90);
+        if(cena===1){x.strokeStyle='#641111'; x.lineWidth=3; x.setLineDash([5,5]); x.beginPath(); x.moveTo(250,220); x.lineTo(530,150); x.stroke(); x.setLineDash([]);}
+    }
+
+    function atualizaAdaptativo(t){
+        if(cena!==3)return;
+        if(ultimoTempo===null){ultimoTempo=t; return;}
+        let delta=(t-ultimoTempo)/1000;
+        if(delta>=1){ultimoTempo=t; timer=Math.min(timer+1,ESPERA);
+            if(ped && timer>=ESPERA){luzCarro='red'; luzPed='green';}
+            else{luzCarro='green'; luzPed='red';}
+            desenhar();
+        }
+    }
+    function loop(t){atualizaAdaptativo(t); requestAnimationFrame(loop);}
+    requestAnimationFrame(loop);
+
+    c.addEventListener('click',()=>mudarCena((cena+1)%4));
+    botoes.forEach(b=>b.addEventListener('click',e=>mudarCena(parseInt(e.target.dataset.cena))));
+    mudarCena(0);
+})();
+</script>
+</body>
+</html>
